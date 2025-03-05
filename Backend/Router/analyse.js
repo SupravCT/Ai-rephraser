@@ -1,0 +1,45 @@
+import express from "express";
+import { OpenAI } from "openai"; 
+import dotenv from "dotenv";
+
+const analyse = express.Router();
+
+dotenv.config({ path: "./config/config.env" });
+const openai = new OpenAI({
+   
+  apiKey: process.env.OPEN_API_KEY  
+});
+
+analyse.post("/analyse", async (req, res) => {
+  const { sentence } = req.body;
+  try {
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content:
+            "You are a helpful assistant that rephrases sentences. Only return the rephrased sentences without any additional comments or context.",
+        },
+        {
+          role: "user",
+          content: sentence,
+        },
+      ],
+      max_tokens: 150,
+      temperature: 0.7,
+    });
+    const rephrased = response.choices[0].message.content;
+
+    return res.status(200).json({ rephrased });
+  } catch (e) {
+    console.error("Error:", e.message);
+    return res.status(500).json({
+      message: "Failed to process the request",
+      error: e.response ? e.response.data : e.message,
+    });
+  }
+});
+
+export default analyse;
